@@ -7,17 +7,7 @@ import { createLogger } from "../utils/logger.ts";
 
 const logger = createLogger({ component: "mcp-endpoints" });
 
-// Deno Deploy runs each request in a potentially different isolate, so MCP
-// session state cannot be shared in process memory across requests. The
-// server therefore operates in a stateless mode: every POST is fully
-// self contained. For each incoming JSON-RPC message we spin up a fresh
-// McpServer and transport, handle the single message, stream the response
-// back on the same HTTP response, and then close the stream.
-
 export function handleMcpGet(c: Context) {
-  // In stateless mode there is no long lived server initiated stream to
-  // resume, so a GET simply opens an empty SSE stream that stays quiet.
-  // Clients that probe GET will keep the connection idle without errors.
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
@@ -80,7 +70,6 @@ export async function handleMcpPost(c: Context) {
       }
       await writer.write(encoder.encode(`data: ${data}\n\n`));
     } catch {
-      // Silently handle write errors
     }
   };
 
@@ -88,9 +77,6 @@ export async function handleMcpPost(c: Context) {
   transport.attachStream({
     writeSSE: async (data: { data: string; event?: string; id?: string }) => {
       await writeSSE(data.data, data.event);
-      // Each request expects a single response message. Once it has been
-      // written, close the stream so the client receives a complete reply
-      // instead of waiting on an open connection.
       closeStream();
     },
     close: () => {
@@ -119,8 +105,6 @@ export async function handleMcpPost(c: Context) {
 
       await transport.handleIncomingMessage(message);
 
-      // Notifications and responses without a reply will not trigger a
-      // write, so close the stream after a short delay to avoid hanging.
       setTimeout(() => {
         closeStream();
       }, 1000);
