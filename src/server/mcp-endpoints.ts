@@ -70,6 +70,7 @@ export async function handleMcpPost(c: Context) {
       }
       await writer.write(encoder.encode(`data: ${data}\n\n`));
     } catch {
+      // Silently handle write errors (e.g. client disconnected)
     }
   };
 
