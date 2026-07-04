@@ -106,9 +106,14 @@ export async function handleMcpPost(c: Context) {
 
       await transport.handleIncomingMessage(message);
 
+      // The stream is normally closed as soon as the response is written
+      // (see writeSSE in attachStream). This timer is only a safety backstop
+      // for messages that never produce a response (e.g. notifications), so it
+      // must be well above the slowest expected tool round-trip — a short
+      // cutoff here would truncate any response slower than the timeout.
       setTimeout(() => {
         closeStream();
-      }, 1000);
+      }, 30000);
     } catch {
       logger.error("Failed to handle MCP message via POST");
       closeStream();
