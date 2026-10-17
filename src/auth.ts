@@ -50,7 +50,7 @@ function getConfigDir(): string {
 }
 
 function authHint(): string {
-  return `GOOGLE_TASKS_PROFILE=${getProfile()} npx google-tasks-mcp auth を実行してください。`;
+  return `GOOGLE_TASKS_PROFILE=${getProfile()} node ${process.argv[1]} auth を実行してください。`;
 }
 
 async function loadCredentials(): Promise<Credentials> {
