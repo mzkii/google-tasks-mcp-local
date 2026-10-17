@@ -25,3 +25,20 @@ jobs:
       - run: npm ci
       - run: npm audit --omit=dev --audit-level=high
       - run: node scripts/smoke.mjs
+
+  # Dependabot のマイナー・パッチ更新は、CI が通ったら自動でマージする（メジャー更新は手動）
+  automerge:
+    needs: build
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+      - if: steps.meta.outputs.update-type != 'version-update:semver-major'
+        run: gh pr merge --squash --delete-branch "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
