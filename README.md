@@ -1,4 +1,4 @@
-# google-tasks-mcp
+# google-tasks-mcp-local
 
 Google Tasks 用の MCP サーバー（ローカル stdio 型）。Claude Code / Claude Desktop から子プロセスとして起動され、自分のマシンと Google Tasks API だけで完結します。
 
@@ -16,12 +16,12 @@ Google Tasks 用の MCP サーバー（ローカル stdio 型）。Claude Code /
 Claude Code / Desktop
    │ stdio (JSON-RPC)
    ▼
-google-tasks-mcp (ローカルプロセス)
+google-tasks-mcp-local (ローカルプロセス)
    │ HTTPS (Bearer access_token)
    ▼
 tasks.googleapis.com / oauth2.googleapis.com
 
-保存先: ${XDG_CONFIG_HOME:-~/.config}/google-tasks-mcp/<profile>/
+保存先: ${XDG_CONFIG_HOME:-~/.config}/google-tasks-mcp-local/<profile>/
   credentials.json  OAuth クライアント（ユーザーが配置）
   token.json        トークン（0600、ディレクトリ 0700）
 ```
@@ -35,8 +35,8 @@ tasks.googleapis.com / oauth2.googleapis.com
 3. 「認証情報」で OAuth クライアント ID を作成（種類は **デスクトップアプリ**）し、JSON をダウンロード
 4. JSON を `credentials.json` として配置
    ```
-   mkdir -p ~/.config/google-tasks-mcp/work
-   mv ~/Downloads/client_secret_*.json ~/.config/google-tasks-mcp/work/credentials.json
+   mkdir -p ~/.config/google-tasks-mcp-local/work
+   mv ~/Downloads/client_secret_*.json ~/.config/google-tasks-mcp-local/work/credentials.json
    ```
 5. ビルドと認可
    ```

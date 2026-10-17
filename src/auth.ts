@@ -46,7 +46,7 @@ function getProfile(): string {
 
 function getConfigDir(): string {
   const base = process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
-  return join(base, "google-tasks-mcp", getProfile());
+  return join(base, "google-tasks-mcp-local", getProfile());
 }
 
 function authHint(): string {

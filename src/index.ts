@@ -11,7 +11,7 @@ async function main() {
     return;
   }
 
-  const server = new McpServer({ name: "google-tasks-mcp", version: "2.0.0" });
+  const server = new McpServer({ name: "google-tasks-mcp-local", version: "2.0.0" });
   registerAllTools(server, isReadOnly());
   await server.connect(new StdioServerTransport());
 }
