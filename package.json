@@ -1,29 +1,22 @@
 {
   "name": "google-tasks-mcp-local",
   "version": "2.0.0",
-  "description": "MCP server (stdio) for Google Tasks, runs locally",
+  "private": true,
+  "description": "Google Tasks MCP server (stdio), runs locally",
   "type": "module",
-  "main": "build/index.js",
   "scripts": {
+    "prepare": "tsc",
     "build": "tsc",
+    "setup": "node build/index.js setup",
+    "auth": "node build/index.js auth",
     "start": "node build/index.js"
   },
-  "keywords": [
-    "mcp",
-    "google-tasks",
-    "productivity",
-    "tasks"
-  ],
   "author": "mzkii",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mzkii/google-tasks-mcp-local.git"
   },
-  "bugs": {
-    "url": "https://github.com/mzkii/google-tasks-mcp-local/issues"
-  },
-  "homepage": "https://github.com/mzkii/google-tasks-mcp-local#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
     "zod": "^3.25.76"
@@ -32,12 +25,6 @@
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2"
   },
-  "bin": {
-    "google-tasks-mcp-local": "build/index.js"
-  },
-  "files": [
-    "build"
-  ],
   "engines": {
     "node": ">=20"
   }

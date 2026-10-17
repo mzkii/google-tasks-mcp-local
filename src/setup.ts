@@ -1,12 +1,14 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { getConfigDir, getProfile, runAuth, writeSecureFile } from "./auth.ts";
 
 export const USAGE = `使い方:
   node build/index.js                                  MCP サーバーとして起動（stdio）
-  node build/index.js setup <client_secret.json> [オプション]
+  node build/index.js setup [client_secret.json] [オプション]
                                                        認証情報を配置して認可まで実行
+                                                       （パス省略時は ~/Downloads の最新の client_secret_*.json）
   node build/index.js auth [オプション]                認可のやり直し（credentials.json 配置済み）
   node build/index.js help                             この表示
 
@@ -100,6 +102,23 @@ ${desktop}
 `;
 }
 
+// ~/Downloads から最新の client_secret_*.json を探す
+async function findDownloadedClientJson(): Promise<string> {
+  const dir = join(homedir(), "Downloads");
+  const names = (await readdir(dir).catch(() => [] as string[])).filter(
+    (n) => n.startsWith("client_secret_") && n.endsWith(".json")
+  );
+  if (names.length === 0) {
+    throw new UsageError(
+      `${dir} に client_secret_*.json が見つかりません。パスを指定してください`
+    );
+  }
+  const withTime = await Promise.all(
+    names.map(async (n) => ({ path: join(dir, n), mtime: (await stat(join(dir, n))).mtimeMs }))
+  );
+  return withTime.sort((a, b) => b.mtime - a.mtime)[0].path;
+}
+
 export async function runAuthCommand(args: string[]): Promise<void> {
   const parsed = parseArgs(args);
   if (parsed.positional.length > 0) throw new UsageError("引数が多すぎます");
@@ -109,13 +128,17 @@ export async function runAuthCommand(args: string[]): Promise<void> {
 
 export async function runSetup(args: string[]): Promise<void> {
   const parsed = parseArgs(args);
-  if (parsed.positional.length !== 1) {
-    throw new UsageError("client_secret.json のパスを 1 つ指定してください");
+  if (parsed.positional.length > 1) {
+    throw new UsageError("client_secret.json のパスは 1 つだけ指定してください");
   }
   applyOptions(parsed);
   const profile = getProfile();
 
-  const json = await loadClientJson(resolve(parsed.positional[0]));
+  const source = parsed.positional[0]
+    ? resolve(parsed.positional[0])
+    : await findDownloadedClientJson();
+  console.error(`使用する JSON: ${source}`);
+  const json = await loadClientJson(source);
 
   const target = join(getConfigDir(), "credentials.json");
   if (existsSync(target)) {

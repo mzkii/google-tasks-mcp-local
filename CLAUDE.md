@@ -6,10 +6,11 @@ Google Tasks 用のローカル stdio 型 MCP サーバー。外部サーバー�
 
 ## コマンド
 
-- ビルド: `npm run build`（tsc）
+- ビルド: `npm run build`（tsc。`npm install` 時も prepare で自動実行）
 - 起動: `npm start`（stdio）
-- セットアップ: `node build/index.js setup <client_secret.json> [--profile <p>] [--readonly]`（JSON 検証・配置 → 認可 → 登録コマンド表示。登録は実行しない）
-- 再認可: `node build/index.js auth [--profile <p>] [--readonly]`
+- セットアップ: `npm run setup -- [client_secret.json] [--profile <p>] [--readonly]`（パス省略時は ~/Downloads の最新 client_secret_*.json。JSON 検証・配置 → 認可 → 登録コマンド表示。登録は実行しない）
+- 再認可: `npm run auth -- [--profile <p>] [--readonly]`
+- npm には公開しない（`private: true`）
 
 テストフレームワークなし。stdio に JSON-RPC を流して確認する。
 
