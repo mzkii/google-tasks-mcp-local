@@ -1,13 +1,23 @@
+# 新しく出たバージョンはすぐに取り込まず、cooldown の日数がたってから更新 PR を作る
+# （脆弱性の修正 = Dependabot security updates は cooldown を待たずに PR が作られる）
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
+    versioning-strategy: increase
+    cooldown:
+      default-days: 14
+      semver-major-days: 30
     groups:
       dependencies:
         patterns: ["*"]
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    cooldown:
+      default-days: 14
+      semver-major-days: 30
