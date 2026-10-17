@@ -12,7 +12,7 @@ import { addReadableTimestamps } from "../utils/timestamp.ts";
 
 const logger = createLogger({ component: "tools:tasklists" });
 
-export function registerTaskListsTools(server: any, mcpAccessToken: string) {
+export function registerTaskListsTools(server: any) {
   server.registerTool(
     "list_task_lists",
     {
@@ -33,7 +33,7 @@ export function registerTaskListsTools(server: any, mcpAccessToken: string) {
       const { maxResults, pageToken } = args;
       logger.info("Tool invoked: list_task_lists");
       try {
-        const result = await listTaskLists(mcpAccessToken, maxResults, pageToken);
+        const result = await listTaskLists(maxResults, pageToken);
         const processedData = addReadableTimestamps(result);
 
         return {
@@ -71,7 +71,7 @@ export function registerTaskListsTools(server: any, mcpAccessToken: string) {
       const { taskListId } = args;
       logger.info("Tool invoked: get_task_list");
       try {
-        const result = await getTaskList(mcpAccessToken, taskListId);
+        const result = await getTaskList(taskListId);
         const processedData = addReadableTimestamps(result);
 
         return {
@@ -109,7 +109,7 @@ export function registerTaskListsTools(server: any, mcpAccessToken: string) {
       const { title } = args;
       logger.info("Tool invoked: insert_task_list");
       try {
-        const result = await insertTaskList(mcpAccessToken, title);
+        const result = await insertTaskList(title);
         const processedData = addReadableTimestamps(result);
 
         return {
@@ -148,7 +148,7 @@ export function registerTaskListsTools(server: any, mcpAccessToken: string) {
       const { taskListId, title } = args;
       logger.info("Tool invoked: update_task_list");
       try {
-        const result = await updateTaskList(mcpAccessToken, taskListId, title);
+        const result = await updateTaskList(taskListId, title);
         const processedData = addReadableTimestamps(result);
 
         return {
@@ -187,7 +187,7 @@ export function registerTaskListsTools(server: any, mcpAccessToken: string) {
       const { taskListId, title } = args;
       logger.info("Tool invoked: patch_task_list");
       try {
-        const result = await patchTaskList(mcpAccessToken, taskListId, { title });
+        const result = await patchTaskList(taskListId, { title });
         const processedData = addReadableTimestamps(result);
 
         return {
@@ -225,7 +225,7 @@ export function registerTaskListsTools(server: any, mcpAccessToken: string) {
       const { taskListId } = args;
       logger.info("Tool invoked: delete_task_list");
       try {
-        await deleteTaskList(mcpAccessToken, taskListId);
+        await deleteTaskList(taskListId);
 
         return {
           content: [

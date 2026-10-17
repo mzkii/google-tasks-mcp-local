@@ -1,102 +1,53 @@
-import process from "node:process";
-
-type LogLevel = "trace" | "debug" | "info" | "warn" | "error";
-
-interface LogContext {
-  component?: string;
-  [key: string]: any;
-}
+// stdout は MCP プロトコル専用。ログは必ず stderr に出す。
+// トークン等の秘匿情報はログに渡さないこと（念のためリダクションも行う）。
+type LogLevel = "debug" | "info" | "warn" | "error";
 
 const LOG_LEVELS: Record<LogLevel, number> = {
-  trace: 0,
-  debug: 1,
-  info: 2,
-  warn: 3,
-  error: 4,
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
 };
 
-const currentLogLevel: LogLevel =
-  (process.env.LOG_LEVEL as LogLevel) || "info";
+const currentLevel: LogLevel =
+  (process.env.LOG_LEVEL as LogLevel) in LOG_LEVELS
+    ? (process.env.LOG_LEVEL as LogLevel)
+    : "info";
 
-// Sensitive patterns to redact from logs
 const REDACTION_PATTERNS = [
-  /access[_-]?token["\s:=]+([a-zA-Z0-9_\-\.]+)/gi,
-  /refresh[_-]?token["\s:=]+([a-zA-Z0-9_\-\.]+)/gi,
-  /client[_-]?secret["\s:=]+([a-zA-Z0-9_\-\.]+)/gi,
-  /authorization:\s*bearer\s+([a-zA-Z0-9_\-\.]+)/gi,
-  /code["\s:=]+([a-zA-Z0-9_\-]+)/gi,
-  /user[_-]?id["\s:=]+(\d+)/gi,
-  /userid["\s:=]+(\d+)/gi,
+  /(access[_-]?token["\s:=]+)[\w\-.]+/gi,
+  /(refresh[_-]?token["\s:=]+)[\w\-.]+/gi,
+  /(client[_-]?secret["\s:=]+)[\w\-.]+/gi,
+  /(authorization:\s*bearer\s+)[\w\-.]+/gi,
+  /(code["\s:=]+)[\w\-/]+/gi,
 ];
 
-function redactSensitiveData(message: string): string {
-  let redacted = message;
-  for (const pattern of REDACTION_PATTERNS) {
-    redacted = redacted.replace(pattern, (match, group) => {
-      return match.replace(group, "[REDACTED]");
-    });
-  }
-  return redacted;
+function redact(message: string): string {
+  return REDACTION_PATTERNS.reduce(
+    (m, pattern) => m.replace(pattern, "$1[REDACTED]"),
+    message
+  );
 }
 
-function formatLogMessage(
-  level: LogLevel,
-  message: string,
-  context?: LogContext
-): string {
-  const timestamp = new Date().toISOString();
-  const component = context?.component ? `[${context.component}]` : "";
-  const contextStr = context
-    ? Object.entries(context)
-        .filter(([key]) => key !== "component")
-        .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
-        .join(" ")
-    : "";
+export function createLogger(defaultContext: { component?: string } = {}) {
+  const log = (level: LogLevel, message: string, context?: Record<string, unknown>) => {
+    if (LOG_LEVELS[level] < LOG_LEVELS[currentLevel]) return;
+    const { component } = defaultContext;
+    const extra = context
+      ? Object.entries(context)
+          .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+          .join(" ")
+      : "";
+    const line = `${new Date().toISOString()} ${level.toUpperCase()} ${
+      component ? `[${component}] ` : ""
+    }${message} ${extra}`.trim();
+    console.error(redact(line));
+  };
 
-  const logMessage = `${timestamp} ${level.toUpperCase()} ${component} ${message} ${contextStr}`.trim();
-  return redactSensitiveData(logMessage);
-}
-
-function shouldLog(level: LogLevel): boolean {
-  return LOG_LEVELS[level] >= LOG_LEVELS[currentLogLevel];
-}
-
-export function createLogger(defaultContext?: LogContext) {
   return {
-    trace: (message: string, context?: LogContext) => {
-      if (shouldLog("trace")) {
-        console.log(
-          formatLogMessage("trace", message, { ...defaultContext, ...context })
-        );
-      }
-    },
-    debug: (message: string, context?: LogContext) => {
-      if (shouldLog("debug")) {
-        console.log(
-          formatLogMessage("debug", message, { ...defaultContext, ...context })
-        );
-      }
-    },
-    info: (message: string, context?: LogContext) => {
-      if (shouldLog("info")) {
-        console.log(
-          formatLogMessage("info", message, { ...defaultContext, ...context })
-        );
-      }
-    },
-    warn: (message: string, context?: LogContext) => {
-      if (shouldLog("warn")) {
-        console.warn(
-          formatLogMessage("warn", message, { ...defaultContext, ...context })
-        );
-      }
-    },
-    error: (message: string, context?: LogContext) => {
-      if (shouldLog("error")) {
-        console.error(
-          formatLogMessage("error", message, { ...defaultContext, ...context })
-        );
-      }
-    },
+    debug: (message: string, context?: Record<string, unknown>) => log("debug", message, context),
+    info: (message: string, context?: Record<string, unknown>) => log("info", message, context),
+    warn: (message: string, context?: Record<string, unknown>) => log("warn", message, context),
+    error: (message: string, context?: Record<string, unknown>) => log("error", message, context),
   };
 }

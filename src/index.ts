@@ -1,26 +1,22 @@
 #!/usr/bin/env node
 
-import process from "node:process";
-import { initOAuthStore } from "./auth/oauth.ts";
-import { tokenStore } from "./auth/token-store.ts";
-import { createApp } from "./server/app.ts";
-import { setOAuthConfig } from "./config.ts";
-import { initRateLimiter } from "./server/rate-limiter.ts";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { isReadOnly, runAuth } from "./auth.ts";
+import { registerAllTools } from "./tools/index.ts";
 
-await tokenStore.init();
-await initOAuthStore();
-await initRateLimiter();
+async function main() {
+  if (process.argv[2] === "auth") {
+    await runAuth();
+    return;
+  }
 
-const oauthConfig = {
-  clientId: process.env.GOOGLE_CLIENT_ID || "",
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-  redirectUri: process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/callback",
-};
+  const server = new McpServer({ name: "google-tasks-mcp", version: "2.0.0" });
+  registerAllTools(server, isReadOnly());
+  await server.connect(new StdioServerTransport());
+}
 
-setOAuthConfig(oauthConfig);
-
-const app = createApp({ oauthConfig });
-
-export default {
-  fetch: app.fetch,
-};
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+});
