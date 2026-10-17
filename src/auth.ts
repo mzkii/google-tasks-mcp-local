@@ -34,7 +34,7 @@ function getScope(): string {
     : "https://www.googleapis.com/auth/tasks";
 }
 
-function getProfile(): string {
+export function getProfile(): string {
   const profile = process.env.GOOGLE_TASKS_PROFILE || "default";
   if (!/^[a-zA-Z0-9_-]+$/.test(profile)) {
     throw new Error(
@@ -44,7 +44,7 @@ function getProfile(): string {
   return profile;
 }
 
-function getConfigDir(): string {
+export function getConfigDir(): string {
   const base = process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
   return join(base, "google-tasks-mcp-local", getProfile());
 }
@@ -80,13 +80,17 @@ async function loadToken(): Promise<TokenData> {
   }
 }
 
-async function saveToken(token: TokenData): Promise<void> {
+export async function writeSecureFile(name: string, content: string): Promise<void> {
   const dir = getConfigDir();
   await mkdir(dir, { recursive: true, mode: 0o700 });
   await chmod(dir, 0o700);
-  const path = join(dir, "token.json");
-  await writeFile(path, JSON.stringify(token, null, 2), { mode: 0o600 });
+  const path = join(dir, name);
+  await writeFile(path, content, { mode: 0o600 });
   await chmod(path, 0o600);
+}
+
+async function saveToken(token: TokenData): Promise<void> {
+  await writeSecureFile("token.json", JSON.stringify(token, null, 2));
 }
 
 async function requestToken(params: Record<string, string>): Promise<any> {
