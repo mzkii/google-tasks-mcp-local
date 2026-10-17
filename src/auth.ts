@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { t } from "./utils/i18n.ts";
 import { createLogger } from "./utils/logger.ts";
 
 const logger = createLogger({ component: "auth" });
@@ -38,7 +39,10 @@ export function getProfile(): string {
   const profile = process.env.GOOGLE_TASKS_PROFILE || "default";
   if (!/^[a-zA-Z0-9_-]+$/.test(profile)) {
     throw new Error(
-      `GOOGLE_TASKS_PROFILE の値が不正です（英数字・_・- のみ）: ${profile}`
+      t(
+        `GOOGLE_TASKS_PROFILE の値が不正です（英数字・_・- のみ）: ${profile}`,
+        `Invalid GOOGLE_TASKS_PROFILE (letters, digits, _ and - only): ${profile}`
+      )
     );
   }
   return profile;
@@ -50,7 +54,8 @@ export function getConfigDir(): string {
 }
 
 function authHint(): string {
-  return `GOOGLE_TASKS_PROFILE=${getProfile()} node ${process.argv[1]} auth を実行してください。`;
+  const command = `GOOGLE_TASKS_PROFILE=${getProfile()} node ${process.argv[1]} auth`;
+  return t(`${command} を実行してください。`, `Run: ${command}`);
 }
 
 async function loadCredentials(): Promise<Credentials> {
@@ -60,13 +65,19 @@ async function loadCredentials(): Promise<Credentials> {
     raw = await readFile(path, "utf8");
   } catch {
     throw new Error(
-      `credentials.json が見つかりません。GCP で作成した「デスクトップアプリ」の OAuth クライアント JSON を次の場所に置いてください: ${path}`
+      t(
+        `credentials.json が見つかりません。GCP で作成した「デスクトップアプリ」の OAuth クライアント JSON を次の場所に置いてください: ${path}`,
+        `credentials.json not found. Place the "Desktop app" OAuth client JSON created in GCP at: ${path}`
+      )
     );
   }
   const client = JSON.parse(raw)?.installed;
   if (!client?.client_id || !client?.client_secret) {
     throw new Error(
-      `credentials.json の形式が不正です（"installed" に client_id / client_secret が必要）: ${path}`
+      t(
+        `credentials.json の形式が不正です（"installed" に client_id / client_secret が必要）: ${path}`,
+        `Invalid credentials.json ("installed" must contain client_id and client_secret): ${path}`
+      )
     );
   }
   return { client_id: client.client_id, client_secret: client.client_secret };
@@ -76,7 +87,7 @@ async function loadToken(): Promise<TokenData> {
   try {
     return JSON.parse(await readFile(join(getConfigDir(), "token.json"), "utf8"));
   } catch {
-    throw new Error(`認可が必要です。${authHint()}`);
+    throw new Error(`${t("認可が必要です。", "Authorization required.")} ${authHint()}`);
   }
 }
 
@@ -102,7 +113,7 @@ async function requestToken(params: Record<string, string>): Promise<any> {
   if (!response.ok) {
     // レスポンス本文にトークンは含まれないが、ログには status のみ出す
     logger.error("Token request failed", { status: response.status });
-    throw new Error(`トークン取得に失敗しました (${response.status})`);
+    throw new Error(t(`トークン取得に失敗しました (${response.status})`, `Failed to obtain token (${response.status})`));
   }
   return response.json();
 }
@@ -124,7 +135,7 @@ export async function getValidAccessToken(): Promise<string> {
       grant_type: "refresh_token",
     });
   } catch {
-    throw new Error(`トークンの更新に失敗しました。${authHint()}`);
+    throw new Error(`${t("トークンの更新に失敗しました。", "Failed to refresh the token.")} ${authHint()}`);
   }
 
   const updated: TokenData = {
@@ -137,9 +148,13 @@ export async function getValidAccessToken(): Promise<string> {
   return updated.access_token;
 }
 
-function openBrowser(url: string) {
-  if (process.platform !== "darwin") return;
-  execFile("open", [url], () => {}); // 失敗しても URL 表示で続行
+// シェルを介さずブラウザを開く。失敗しても URL 表示で続行
+export function openBrowser(url: string) {
+  if (process.platform === "darwin") execFile("open", [url], () => {});
+  else if (process.platform === "linux") execFile("xdg-open", [url], () => {});
+  else if (process.platform === "win32") {
+    execFile("rundll32", ["url.dll,FileProtocolHandler", url], () => {});
+  }
 }
 
 export async function runAuth(): Promise<void> {
@@ -154,7 +169,7 @@ export async function runAuth(): Promise<void> {
       let redirectUri = "";
       const timer = setTimeout(() => {
         server.close();
-        reject(new Error("認可がタイムアウトしました（5分）"));
+        reject(new Error(t("認可がタイムアウトしました（5分）", "Authorization timed out (5 minutes)")));
       }, AUTH_TIMEOUT_MS);
 
       const server = createServer((req, res) => {
@@ -167,14 +182,21 @@ export async function runAuth(): Promise<void> {
         const received = url.searchParams.get("code");
         if (error || !received || url.searchParams.get("state") !== state) {
           res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
-          res.end("認可に失敗しました。");
+          res.end(t("認可に失敗しました。", "Authorization failed."));
           clearTimeout(timer);
           server.close();
-          reject(new Error(`認可に失敗しました: ${error ?? "state 不一致または code なし"}`));
+          reject(
+            new Error(
+              t(
+                `認可に失敗しました: ${error ?? "state 不一致または code なし"}`,
+                `Authorization failed: ${error ?? "state mismatch or missing code"}`
+              )
+            )
+          );
           return;
         }
         res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
-        res.end("完了しました。このタブは閉じてください");
+        res.end(t("完了しました。このタブは閉じてください", "Done. You can close this tab."));
         clearTimeout(timer);
         server.close();
         resolve({ code: received, redirectUri });
@@ -194,7 +216,9 @@ export async function runAuth(): Promise<void> {
           access_type: "offline",
           prompt: "consent",
         })}`;
-        console.error(`ブラウザで次の URL を開いて認可してください:\n${authUrl}\n`);
+        console.error(
+          `${t("ブラウザで次の URL を開いて認可してください:", "Open this URL in your browser to authorize:")}\n${authUrl}\n`
+        );
         openBrowser(authUrl);
       });
     }
@@ -209,7 +233,7 @@ export async function runAuth(): Promise<void> {
     grant_type: "authorization_code",
   });
   if (!data.refresh_token) {
-    throw new Error("refresh_token が取得できませんでした。再度 auth を実行してください");
+    throw new Error(t("refresh_token が取得できませんでした。再度 auth を実行してください", "No refresh_token was returned. Run auth again"));
   }
 
   await saveToken({
@@ -218,5 +242,10 @@ export async function runAuth(): Promise<void> {
     expires_at: Date.now() + data.expires_in * 1000,
     scope: data.scope ?? getScope(),
   });
-  console.error(`認可が完了しました。token.json を保存しました: ${join(getConfigDir(), "token.json")}`);
+  console.error(
+    t(
+      `認可が完了しました。token.json を保存しました: ${join(getConfigDir(), "token.json")}`,
+      `Authorization complete. Saved token.json: ${join(getConfigDir(), "token.json")}`
+    )
+  );
 }

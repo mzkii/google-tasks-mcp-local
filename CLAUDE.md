@@ -8,7 +8,7 @@ Google Tasks 用のローカル stdio 型 MCP サーバー。外部サーバー�
 
 - ビルド: `npm run build`（tsc。`npm install` 時も prepare で自動実行）
 - 起動: `npm start`（stdio）
-- セットアップ: `npm run setup -- [client_secret.json] [--profile <p>] [--readonly]`（パス省略時は ~/Downloads の最新 client_secret_*.json。JSON 検証・配置 → 認可 → 登録コマンド表示。登録は実行しない）
+- セットアップ: `npm run setup -- [client_secret.json] [--profile <p>] [--readonly]`（パス省略時は ~/Downloads の最新 client_secret_*.json。無ければ作成手順を表示しブラウザを開いて、新しい JSON のダウンロードを最大 15 分待つ。JSON 検証・配置 → 認可 → TTY かつ `claude` があれば登録を確認して実行、なければ登録コマンドを表示。Claude Desktop 用 JSON は常に表示）
 - 再認可: `npm run auth -- [--profile <p>] [--readonly]`
 - npm には公開しない（`private: true`）
 
@@ -17,11 +17,11 @@ Google Tasks 用のローカル stdio 型 MCP サーバー。外部サーバー�
 ## 構成
 
 - `src/index.ts` — エントリ。引数なしで stdio サーバー起動、`setup` / `auth` / `help` サブコマンド
-- `src/setup.ts` — `setup` / `auth` の引数パース、client JSON 検証、登録コマンド整形
+- `src/setup.ts` — `setup` / `auth` の引数パース、client JSON 検証、Downloads 待機、Claude Code 登録
 - `src/auth.ts` — プロファイル/保存先、ループバック OAuth（PKCE）、トークン更新。`credentials.json` と `token.json` を `${XDG_CONFIG_HOME:-~/.config}/google-tasks-mcp-local/<profile>/` に置く
 - `src/google/api.ts` — Tasks REST の薄いラッパ（fetch）。204 は `{ success: true }`
 - `src/tools/` — 14 ツール。`GOOGLE_TASKS_READONLY=1` では読み取り系 4 つのみ登録（`tools/index.ts`）
-- `src/utils/` — logger（stderr 専用、リダクション付き）、timestamp
+- `src/utils/` — logger（stderr 専用、リダクション付き）、timestamp、i18n（`t(ja, en)`。CLI メッセージは日英併記、ロケールで切替）
 
 ## 規約
 

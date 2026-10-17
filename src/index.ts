@@ -4,6 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { isReadOnly } from "./auth.ts";
 import { USAGE, isUsageError, runAuthCommand, runSetup } from "./setup.ts";
+import { t } from "./utils/i18n.ts";
 import { registerAllTools } from "./tools/index.ts";
 
 async function main() {
@@ -15,7 +16,7 @@ async function main() {
     return;
   }
   if (command !== undefined) {
-    console.error(`未知のコマンドです: ${command}\n\n${USAGE}`);
+    console.error(`${t("未知のコマンドです", "Unknown command")}: ${command}\n\n${USAGE}`);
     process.exit(1);
   }
 
