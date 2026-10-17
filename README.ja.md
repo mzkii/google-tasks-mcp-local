@@ -8,12 +8,11 @@
 
 # google-tasks-mcp-local
 
-**Claude Code** / **Claude Desktop** から **Google Tasks** を読み書きするための MCP サーバーです。自分のマシンの中だけで動きます。
+Claude Code / Claude Desktop から Google Tasks を読み書きするための MCP サーバーです。自分のマシンの中だけで動きます。
 
-- 🔒 **外部サーバーなし**。通信するのは自分のマシンと Google Tasks API だけ
-- 🗝️ **自分の OAuth クライアントを使う**。保存するのはトークンだけ（`~/.config/google-tasks-mcp-local/`、0600）。タスクの中身は保存しない
-- 🪶 **小さい**。依存は `@modelcontextprotocol/sdk` と `zod` の 2 つだけ。情シスの審査にも出しやすい
-- 👥 **個人用と会社用のプロファイル**、**読み取り専用モード**
+外部サーバーは使わず、通信するのは自分のマシンと Google Tasks API だけです。OAuth クライアントも自分のものを使います。保存するのはトークンだけで（`~/.config/google-tasks-mcp-local/`、0600）、タスクの中身は保存しません。
+
+依存は `@modelcontextprotocol/sdk` と `zod` の 2 つだけと小さいので、情シスの審査にも出しやすいです。個人用と会社用のプロファイルを分けて使え、読み取り専用モードもあります。
 
 <p align="center">
   <img src="docs/images/demo-ja.svg" alt="Claude Code に今日のタスクを聞き、タスクを追加する様子" width="90%">
@@ -30,27 +29,25 @@ npm install
 npm run setup
 ```
 
-`npm run setup` が、最後まで順に案内します。
+`npm run setup` が最後まで順に案内します。
 
-1. **OAuth クライアントを作る**：Google Cloud Console を開いて手順を表示します（5 分ほど。下に詳しく書いています）。JSON をダウンロードすると、`~/Downloads` から自動で読み込みます
-2. **認可する**：ブラウザが開くので、ログインして許可します
-3. **登録する**：`Y` と答えると `claude mcp add` を実行します（Claude Desktop 用の設定も表示します）
+1. OAuth クライアントを作るために、Google Cloud Console を開いて手順を表示します（5 分ほど。下に詳しく書いています）。JSON をダウンロードすると、`~/Downloads` から自動で読み込みます
+2. 認可のためにブラウザが開くので、ログインして許可します
+3. `Y` と答えると `claude mcp add` を実行して登録します（Claude Desktop 用の設定も表示します）
 
 Claude Code を再起動し、「Google Tasks のリストを見せて」「買い物リストに牛乳を追加して」のように話しかけてください。
 
 ### OAuth クライアントの作り方（Google Cloud Console）
 
 1. 新しいプロジェクトを作る
-2. [**Google Tasks API**](https://console.cloud.google.com/apis/library/tasks.googleapis.com) を有効にする
-3. 「**Google Auth Platform**」→「開始」。アプリ名とメールを入力し、対象は **外部** を選ぶ
-4. 「**対象**」→「**アプリを公開**」（テストのままだと 7 日で認可が切れる）。公開には次が必要です
-   - アプリ名に「Google」を含めない
-   - ホームページとプライバシーポリシーの URL（自分で用意したページ。GitHub Pages など。[このリポジトリの `docs/`](docs/) が例です）
-5. [**クライアント → クライアントを作成**](https://console.cloud.google.com/auth/clients) → 種類 **デスクトップアプリ** → JSON をダウンロード
+2. [Google Tasks API](https://console.cloud.google.com/apis/library/tasks.googleapis.com) を有効にする
+3. 「Google Auth Platform」→「開始」。アプリ名とメールを入力し、対象は「外部」を選ぶ
+4. 「対象」→「アプリを公開」（テストのままだと **7 日で認可が切れる**）。公開するには、アプリ名に「Google」を含めないことと、ホームページとプライバシーポリシーの URL（GitHub Pages などに自分で用意したページ。[このリポジトリの `docs/`](docs/) が例）が必要
+5. [クライアント → クライアントを作成](https://console.cloud.google.com/auth/clients) → 種類「デスクトップアプリ」→ JSON をダウンロード
 
-認可するときに「このアプリは Google で確認されていません」と表示されます。自分のクライアントなので、「**詳細**」→「**（アプリ名）（安全ではないページ）に移動**」で進めてください。
+認可するときに「このアプリは Google で確認されていません」と表示されます。自分のクライアントなので、「詳細」→「（アプリ名）（安全ではないページ）に移動」で進めてください。
 
-> **会社の Google Workspace アカウントで使う場合**は、会社の GCP に、対象を **内部** にしたクライアントを作ってもらいます。内部なら公開は不要で、警告も出ません。会社の GCP を使ってよいかは、事前に社内で確認してください。
+> 会社の Google Workspace アカウントで使う場合は、会社の GCP に、対象を「内部」にしたクライアントを作ってもらいます。内部なら公開は不要で、警告も出ません。会社の GCP を使ってよいかは、事前に社内で確認してください。
 
 ## 会社用・読み取り専用
 
@@ -67,7 +64,7 @@ npm run setup -- ~/path/to/client_secret.json  # JSON を指定する
 | 症状 | 対処 |
 | --- | --- |
 | Claude から「認可が必要です」と返ってくる | `npm run auth`（会社用は `npm run auth -- --profile work`） |
-| `401 invalid_client` / `The OAuth client was not found` | クライアントを作った直後なら数分待つ。または JSON が古い・削除済み |
+| `401 invalid_client` / `The OAuth client was not found` | クライアントを作った直後なら数分待つ。または JSON が古いか削除済み |
 | `redirect_uri_mismatch` | 種類が「ウェブアプリ」になっている。「デスクトップアプリ」で作り直す |
 | `access_denied` / 403 | アプリを公開していない（テスト中ならテストユーザーに追加する）、または組織のポリシーでブロックされている |
 | 7 日ごとに認可が切れる | アプリを公開してから `npm run auth` を実行する |
@@ -91,9 +88,9 @@ Claude Code ──stdio──▶ google-tasks-mcp-local（ローカルのプロ�
                                    token.json        トークン（0600）
 ```
 
-- 認可は `127.0.0.1` で一時的に待ち受けるループバック OAuth です（PKCE と state で検証）。アクセストークンは自動で更新されます
-- スコープは `https://www.googleapis.com/auth/tasks` です。`--readonly` を付けると `tasks.readonly` になります
-- ログは stderr にだけ出力し、トークンは出力しません
+認可は `127.0.0.1` で一時的に待ち受けるループバック OAuth です。PKCE と state で検証し、アクセストークンは自動で更新されます。スコープは `https://www.googleapis.com/auth/tasks` です。`--readonly` を付けると `tasks.readonly` になります。
+
+ログは stderr にだけ出力し、トークンは出力しません。
 
 <details>
 <summary>コマンド・環境変数・ツール一覧</summary>
@@ -119,4 +116,4 @@ Claude Code ──stdio──▶ google-tasks-mcp-local（ローカルのプロ�
 
 MIT。[akutishevsky/google-tasks-mcp](https://github.com/akutishevsky/google-tasks-mcp) をフォークしたものです。
 
-役に立ったら ⭐ をもらえると、ほかの人にも見つけてもらいやすくなります。
+役に立ったらスターをもらえると、ほかの人にも見つけてもらいやすくなります。

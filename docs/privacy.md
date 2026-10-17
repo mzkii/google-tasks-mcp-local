@@ -8,11 +8,11 @@ google-tasks-mcp-local（以下「本アプリ」）は、利用者自身のコ�
 
 ## 取得する情報
 
-本アプリは、利用者が許可した Google アカウントの Google Tasks のデータ（タスクリストとタスク）に、Google Tasks API を通じてアクセスします。要求するスコープは `https://www.googleapis.com/auth/tasks` です。読み取り専用モードでは `https://www.googleapis.com/auth/tasks.readonly` を要求します。
+本アプリは、Google Tasks API を通じて、利用者が許可した Google アカウントの Google Tasks のデータ（タスクリストとタスク）にアクセスします。要求するスコープは `https://www.googleapis.com/auth/tasks` です。読み取り専用モードでは `https://www.googleapis.com/auth/tasks.readonly` を要求します。
 
 ## 利用目的
 
-取得したデータは、利用者の指示に従って、MCP クライアント（Claude Code など）からタスクの表示・追加・更新・削除を行うためだけに使用します。
+取得したデータは、利用者の指示に従って、MCP クライアント（Claude Code など）からタスクを表示・追加・更新・削除するためだけに使用します。
 
 ## 保存と送信
 
@@ -23,7 +23,7 @@ google-tasks-mcp-local（以下「本アプリ」）は、利用者自身のコ�
 
 ## Google API サービスのユーザーデータに関するポリシー
 
-本アプリによる Google API から取得した情報の使用は、[Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy)（Limited Use の要件を含む）に従います。
+本アプリは、Google API から取得した情報を、[Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy)（Limited Use の要件を含む）に従って使用します。
 
 ## アクセスの取り消し
 

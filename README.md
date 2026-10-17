@@ -8,12 +8,11 @@
 
 # google-tasks-mcp-local
 
-An MCP server that lets **Claude Code** and **Claude Desktop** read and manage your **Google Tasks** — running entirely on your own machine.
+An MCP server that lets Claude Code and Claude Desktop read and manage your Google Tasks. It runs entirely on your own machine.
 
-- 🔒 **No hosted server.** Traffic goes only between your machine and the Google Tasks API
-- 🗝️ **Your own OAuth client.** Only the token is stored (`~/.config/google-tasks-mcp-local/`, mode 0600). Task contents are never saved
-- 🪶 **Tiny.** Two runtime dependencies (`@modelcontextprotocol/sdk`, `zod`) — easy to audit before your IT team approves it
-- 👥 **Personal + work profiles**, and a **read-only mode**
+There is no hosted server: traffic goes only between your machine and the Google Tasks API. You use your own OAuth client, and only the token is stored (`~/.config/google-tasks-mcp-local/`, mode 0600). Task contents are never saved.
+
+It is tiny, with just two runtime dependencies (`@modelcontextprotocol/sdk` and `zod`), so it is easy to audit before your IT team approves it. It supports separate personal and work profiles, and has a read-only mode.
 
 <p align="center">
   <img src="docs/images/demo-en.svg" alt="Asking Claude Code for today's tasks and adding one" width="90%">
@@ -32,25 +31,23 @@ npm run setup
 
 `npm run setup` walks you through everything:
 
-1. **Create an OAuth client** — it opens Google Cloud Console and shows the steps (≈5 min, see below). When you download the JSON, setup picks it up from `~/Downloads` automatically
-2. **Authorize** — a browser opens; sign in and allow access
-3. **Register** — answer `Y` and it runs `claude mcp add` for you (the Claude Desktop config snippet is printed too)
+1. To create an OAuth client, it opens Google Cloud Console and shows the steps (about 5 minutes; details below). When you download the JSON, setup picks it up from `~/Downloads` automatically
+2. To authorize, a browser opens. Sign in and allow access
+3. Answer `Y` and it registers the server by running `claude mcp add` for you (the Claude Desktop config snippet is printed too)
 
 Restart Claude Code and try: *"Show my Google Tasks lists"* or *"Add 'Buy milk' to my groceries list"*.
 
 ### Creating the OAuth client (Google Cloud Console)
 
 1. Create a new project
-2. Enable the [**Google Tasks API**](https://console.cloud.google.com/apis/library/tasks.googleapis.com)
-3. **Google Auth Platform → Get started**: enter an app name and email, choose audience **External**
-4. **Audience → Publish app** — otherwise the authorization expires every 7 days. Publishing requires:
-   - an app name that does **not** contain "Google"
-   - a homepage URL and a privacy policy URL (any pages you control — e.g. GitHub Pages; [this repo's `docs/`](docs/) is an example)
-5. [**Clients → Create client**](https://console.cloud.google.com/auth/clients) → type **Desktop app** → download the JSON
+2. Enable the [Google Tasks API](https://console.cloud.google.com/apis/library/tasks.googleapis.com)
+3. Go to "Google Auth Platform" → "Get started", enter an app name and email, and choose the "External" audience
+4. Go to "Audience" → "Publish app" (otherwise **the authorization expires every 7 days**). To publish, the app name must not contain "Google", and you need a homepage URL and a privacy policy URL (any pages you control, such as GitHub Pages; [this repo's `docs/`](docs/) is an example)
+5. Go to ["Clients" → "Create client"](https://console.cloud.google.com/auth/clients), choose the "Desktop app" type, and download the JSON
 
-When you authorize, Google shows *"Google hasn't verified this app"*. Since it is your own client, click **Advanced → Go to (app name) (unsafe)**.
+When you authorize, Google shows "Google hasn't verified this app". Since it is your own client, click "Advanced" → "Go to (app name) (unsafe)".
 
-> **Using a Google Workspace (work) account?** Ask your admin to create the client in your company's GCP with audience **Internal**. Internal apps need no publishing and show no warning.
+> If you use a Google Workspace (work) account, ask your admin to create the client in your company's GCP with the "Internal" audience. Internal apps need no publishing and show no warning.
 
 ## Work account / read-only
 
@@ -68,7 +65,7 @@ npm run setup -- ~/path/to/client_secret.json  # use a specific JSON
 | --- | --- |
 | Claude says authorization is required | `npm run auth` (work: `npm run auth -- --profile work`) |
 | `401 invalid_client` / `The OAuth client was not found` | Wait a few minutes after creating the client, or the JSON is stale/deleted |
-| `redirect_uri_mismatch` | The client type is "Web application". Recreate it as **Desktop app** |
+| `redirect_uri_mismatch` | The client type is "Web application". Recreate it as "Desktop app" |
 | `access_denied` / 403 | App not published (add yourself as a test user), or blocked by org policy |
 | Authorization expires every 7 days | Publish the app, then run `npm run auth` |
 
@@ -91,9 +88,9 @@ Claude Code ──stdio──▶ google-tasks-mcp-local (local process) ──HT
                                    token.json        token (0600)
 ```
 
-- Loopback OAuth on `127.0.0.1` with PKCE and state verification. Access tokens refresh automatically
-- Scope: `https://www.googleapis.com/auth/tasks` (`tasks.readonly` with `--readonly`)
-- Logs go to stderr only; tokens are never logged
+Authorization uses loopback OAuth on `127.0.0.1`, verified with PKCE and state. Access tokens refresh automatically. The scope is `https://www.googleapis.com/auth/tasks`, or `tasks.readonly` with `--readonly`.
+
+Logs go to stderr only, and tokens are never logged.
 
 <details>
 <summary>Commands, environment variables, tools</summary>
@@ -119,4 +116,4 @@ Tools: `list_task_lists`, `get_task_list`, `insert_task_list`, `update_task_list
 
 MIT. Forked from [akutishevsky/google-tasks-mcp](https://github.com/akutishevsky/google-tasks-mcp).
 
-If this is useful to you, a ⭐ helps others find it.
+If this is useful to you, a star helps others find it.
