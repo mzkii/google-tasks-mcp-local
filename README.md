@@ -96,7 +96,7 @@ launchctl kickstart gui/$(id -u)/local.google-tasks-mcp.slack-sync
 tail -f ~/Library/Logs/google-tasks-mcp-local/slack-sync.log
 ```
 
-`install.sh` copies the config to `~/.config/google-tasks-mcp-local/automation/` and registers a launchd job, so the job does not depend on where your config lives. `install.sh --uninstall` removes the job and keeps the copied config.
+`install.sh` copies the config to `~/.config/google-tasks-mcp-local/automation/` and registers a launchd job, so the job does not depend on where your config lives. `install.sh --uninstall` removes the job and keeps the copied config. Keep the repository outside `~/Documents`, `~/Desktop` and `~/Downloads`: macOS blocks launchd jobs from reading those folders, and the job fails with `Operation not permitted`.
 
 Slack text is treated as untrusted. The headless run is allowed only the read-only Slack tools you list plus `list_tasks`, `insert_task` and `patch_task` on one task list, and `--permission-mode dontAsk` denies everything else. Each run uses your Claude subscription usage.
 

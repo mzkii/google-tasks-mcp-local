@@ -96,7 +96,7 @@ launchctl kickstart gui/$(id -u)/local.google-tasks-mcp.slack-sync
 tail -f ~/Library/Logs/google-tasks-mcp-local/slack-sync.log
 ```
 
-`install.sh` は設定を `~/.config/google-tasks-mcp-local/automation/` にコピーして launchd のジョブを登録するので、設定ファイルの置き場所にジョブは依存しません。`install.sh --uninstall` でジョブを削除できます（コピーした設定は残ります）。
+`install.sh` は設定を `~/.config/google-tasks-mcp-local/automation/` にコピーして launchd のジョブを登録するので、設定ファイルの置き場所にジョブは依存しません。`install.sh --uninstall` でジョブを削除できます（コピーした設定は残ります）。リポジトリは `~/Documents`、`~/Desktop`、`~/Downloads` の外に置いてください。macOS はこれらのフォルダを launchd のジョブから読ませないので、`Operation not permitted` で失敗します。
 
 Slack のテキストは信頼できないものとして扱います。ヘッドレス実行で許可するのは、設定に書いた読み取り専用の Slack ツールと、1 つのタスクリストに対する `list_tasks`、`insert_task`、`patch_task` だけで、それ以外は `--permission-mode dontAsk` がすべて拒否します。実行のたびに Claude のサブスクリプションの使用量を消費します。
 
