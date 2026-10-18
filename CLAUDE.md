@@ -22,7 +22,7 @@ Google Tasks 用のローカル stdio 型 MCP サーバー。外部サーバー�
 - `src/google/api.ts` — Tasks REST の薄いラッパ（fetch）。204 は `{ success: true }`
 - `src/tools/` — 14 ツール。`GOOGLE_TASKS_READONLY=1` では読み取り系 4 つのみ登録。`GOOGLE_TASKS_TOOLS`（カンマ区切り）で登録するツールを絞れる。未知の名前や READONLY との矛盾は起動時エラー（`tools/index.ts`）
 - `src/utils/` — logger（stderr 専用、リダクション付き）、timestamp、i18n（`t(ja, en)`。CLI メッセージは日英併記、ロケールで切替）、allowlist（`GOOGLE_TASKS_ALLOWED_LISTS` のタスクリスト ID 以外へのアクセスを Google 呼び出し前に拒否）
-- `automation/` — Slack → Google Tasks の定期実行（macOS launchd + `claude -p`）。`run.sh`（プロンプト展開・MCP 設定生成・実行）、`install.sh`（plist 生成と登録）、`prompt.md`、`config.example.env`。個人設定はリポジトリ外に置く。`DRY_RUN=1` で副作用なしに確認できる
+- `automation/` — Slack → Google Tasks の定期実行（macOS launchd + `claude -p`）。`run.sh`（プロンプト展開・MCP 設定生成・実行）、`install.sh`（plist 生成と登録）、`github-data.mjs`（`GITHUB_OWNER` 設定時に読み取り専用 gh で PR/issue を取得、モデルには GitHub ツールを渡さない）、`prompt.md`、`config.example.env`。個人設定はリポジトリ外に置く。`DRY_RUN=1` で副作用なしに確認できる
 
 ## 規約
 

@@ -20,6 +20,7 @@ SLACK_READ_TOOLS="${SLACK_READ_TOOLS:-}"
 MODEL="${MODEL:-}"
 EXTRA_INSTRUCTIONS="${EXTRA_INSTRUCTIONS:-}"
 GOOGLE_TASKS_PROFILE="${GOOGLE_TASKS_PROFILE:-default}"
+GITHUB_OWNER="${GITHUB_OWNER:-}"
 
 if [ -z "$SLACK_READ_TOOLS" ]; then
   echo "SLACK_READ_TOOLS is empty" >&2
@@ -31,6 +32,11 @@ if printf '%s\n' $SLACK_READ_TOOLS | grep -Evq '^mcp__claude_ai_Slack__slack_(se
   exit 2
 fi
 
+if [ -n "$GITHUB_OWNER" ] && ! [[ "$GITHUB_OWNER" =~ ^[A-Za-z0-9-]+$ ]]; then
+  echo "GITHUB_OWNER must match ^[A-Za-z0-9-]+\$" >&2
+  exit 2
+fi
+
 node_bin="$(command -v node)"
 state_dir="${XDG_CONFIG_HOME:-$HOME/.config}/google-tasks-mcp-local/automation"
 mcp_json="$state_dir/mcp.json"
@@ -38,16 +44,30 @@ work_dir="$state_dir/work"
 
 echo "start: $(date '+%Y-%m-%d %H:%M:%S')"
 
+# GitHub data is fetched here with fixed read-only gh commands (github-data.mjs); the model gets no GitHub tools.
+# A failure only drops the GitHub part.
+if [ -z "$GITHUB_OWNER" ]; then
+  github_data="GitHub は対象外です。"
+elif [ "${DRY_RUN:-}" = "1" ]; then
+  echo "[dry-run] would fetch GitHub data for owner: $GITHUB_OWNER (gh not called)"
+  github_data="(dry-run: GitHub データは未取得)"
+elif github_data="$(GITHUB_OWNER="$GITHUB_OWNER" LOOKBACK_HOURS="$LOOKBACK_HOURS" node "$repo/automation/github-data.mjs")"; then
+  echo "github: fetched ${#github_data} chars"
+else
+  echo "github: fetch failed, continuing with Slack only"
+  github_data="GitHub の情報は取得に失敗したため、今回は GitHub を対象外とする。"
+fi
+
 # Render the prompt. Values go through the environment so special characters are safe.
 prompt="$(
   TASK_LIST_ID="$TASK_LIST_ID" TARGETS="$TARGETS" LOOKBACK_HOURS="$LOOKBACK_HOURS" \
-  EXTRA_INSTRUCTIONS="$EXTRA_INSTRUCTIONS" \
+  EXTRA_INSTRUCTIONS="$EXTRA_INSTRUCTIONS" GITHUB_DATA="$github_data" \
   node -e '
     const fs = require("fs");
-    let s = fs.readFileSync(process.argv[1], "utf8");
-    for (const k of ["TASK_LIST_ID", "TARGETS", "LOOKBACK_HOURS", "EXTRA_INSTRUCTIONS"]) {
-      s = s.split("{{" + k + "}}").join(process.env[k] ?? "");
-    }
+    const keys = ["TASK_LIST_ID", "TARGETS", "LOOKBACK_HOURS", "EXTRA_INSTRUCTIONS", "GITHUB_DATA"];
+    // single pass so substituted values are never expanded again
+    const s = fs.readFileSync(process.argv[1], "utf8")
+      .replace(/\{\{([A-Z_]+)\}\}/g, (m, k) => (keys.includes(k) ? (process.env[k] ?? "") : m));
     process.stdout.write(s);
   ' "$repo/automation/prompt.md"
 )"

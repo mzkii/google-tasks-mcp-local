@@ -100,6 +100,8 @@ tail -f ~/Library/Logs/google-tasks-mcp-local/slack-sync.log
 
 Slack text is treated as untrusted. The headless run is allowed only the read-only Slack tools you list plus `list_tasks`, `insert_task` and `patch_task` on one task list, and `--permission-mode dontAsk` denies everything else. Each run uses your Claude subscription usage.
 
+Optionally set `GITHUB_OWNER` (a GitHub user or org) in the config to also pick up review requests, comments on your PRs and issues involving you from that owner, over the same `LOOKBACK_HOURS`. The model is given no GitHub tools: `run.sh` fetches the data itself with fixed read-only `gh` commands (so `gh auth login` is needed) and passes it to the prompt as untrusted data. If `gh` is missing or fails, only the GitHub part is skipped. Leave it empty to disable.
+
 ## Troubleshooting
 
 | Symptom | Fix |

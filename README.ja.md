@@ -100,6 +100,8 @@ tail -f ~/Library/Logs/google-tasks-mcp-local/slack-sync.log
 
 Slack のテキストは信頼できないものとして扱います。ヘッドレス実行で許可するのは、設定に書いた読み取り専用の Slack ツールと、1 つのタスクリストに対する `list_tasks`、`insert_task`、`patch_task` だけで、それ以外は `--permission-mode dontAsk` がすべて拒否します。実行のたびに Claude のサブスクリプションの使用量を消費します。
 
+設定に `GITHUB_OWNER`（GitHub のユーザーまたは org）を書くと、その owner のレビュー依頼、自分の PR へのコメント、自分が関わる issue も、同じ `LOOKBACK_HOURS` の期間で拾います。モデルには GitHub のツールを渡さず、`run.sh` が固定の読み取り専用 `gh` コマンドで取得し（`gh auth login` が必要）、信頼できないデータとしてプロンプトに埋め込みます。`gh` が無い、または失敗したときは GitHub の部分だけをスキップします。空にすると無効です。
+
 ## 困ったとき
 
 | 症状 | 対処 |

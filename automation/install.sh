@@ -65,7 +65,10 @@ done
 node_bin="$(command -v node)"
 claude_bin="$(command -v claude || true)"
 [ -n "$claude_bin" ] || { echo "claude CLI not found in PATH" >&2; exit 1; }
-path_value="$(dirname "$node_bin"):$(dirname "$claude_bin"):/usr/bin:/bin"
+gh_bin="$(command -v gh || true)"
+path_value="$(dirname "$node_bin"):$(dirname "$claude_bin")"
+[ -z "$gh_bin" ] || path_value="$path_value:$(dirname "$gh_bin")"
+path_value="$path_value:/usr/bin:/bin"
 copied_config="$state_dir/config.env"
 
 plist_content="<?xml version=\"1.0\" encoding=\"UTF-8\"?>
