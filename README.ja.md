@@ -59,6 +59,47 @@ npm run setup -- --profile work --readonly     # 一覧・取得だけ
 npm run setup -- ~/path/to/client_secret.json  # JSON を指定する
 ```
 
+## 自動実行で使うとき
+
+定期実行のジョブが Slack のメッセージのような信頼できないテキストを読むと、そのテキストに AI が誘導されるおそれがあります。ジョブに必要なツールとリストだけを登録しておけば、乗っ取られたときの被害を小さくできます。リスト ID は `list_task_lists` が返す `id` です。
+
+```sh
+claude mcp add google-tasks-side -s user -e GOOGLE_TASKS_TOOLS=list_tasks,insert_task,patch_task -e GOOGLE_TASKS_ALLOWED_LISTS=<list id> -- node /path/to/build/index.js
+```
+
+Claude Desktop では次のように設定します。
+
+```json
+{
+  "mcpServers": {
+    "google-tasks-side": {
+      "command": "node",
+      "args": ["/path/to/build/index.js"],
+      "env": {
+        "GOOGLE_TASKS_TOOLS": "list_tasks,insert_task,patch_task",
+        "GOOGLE_TASKS_ALLOWED_LISTS": "<list id>"
+      }
+    }
+  }
+}
+```
+
+### Slack から Google Tasks への同期
+
+`automation/` に、直近の Slack のメンション、DM、スレッドの更新から自分宛てのアクションアイテムを拾ってタスクリストに追加する、macOS 向けの汎用ジョブがあります。Claude Code CLI にログイン済みで、claude.ai の Slack コネクタを Claude Code で認可済み（`/mcp` から認可）、このサーバーを `npm run setup` で設定済みであることが前提です。
+
+`automation/config.example.env` をこのリポジトリの外の自分だけの場所にコピーし、タスクリスト ID とスケジュールを書き込んでから、インストールして一度実行します。
+
+```sh
+bash automation/install.sh /path/to/your/config.env
+launchctl kickstart gui/$(id -u)/local.google-tasks-mcp.slack-sync
+tail -f ~/Library/Logs/google-tasks-mcp-local/slack-sync.log
+```
+
+`install.sh` は設定を `~/.config/google-tasks-mcp-local/automation/` にコピーして launchd のジョブを登録するので、設定ファイルの置き場所にジョブは依存しません。`install.sh --uninstall` でジョブを削除できます（コピーした設定は残ります）。
+
+Slack のテキストは信頼できないものとして扱います。ヘッドレス実行で許可するのは、設定に書いた読み取り専用の Slack ツールと、1 つのタスクリストに対する `list_tasks`、`insert_task`、`patch_task` だけで、それ以外は `--permission-mode dontAsk` がすべて拒否します。実行のたびに Claude のサブスクリプションの使用量を消費します。
+
 ## 困ったとき
 
 | 症状 | 対処 |
@@ -105,6 +146,8 @@ Claude Code ──stdio──▶ google-tasks-mcp-local（ローカルのプロ�
 | --- | --- | --- |
 | `GOOGLE_TASKS_PROFILE` | `default` | プロファイル名。`--profile` が優先される |
 | `GOOGLE_TASKS_READONLY` | 未設定 | `1` にすると、読み取り系の 4 ツールだけを登録する |
+| `GOOGLE_TASKS_TOOLS` | 未設定 | 登録するツール名をカンマ区切りで指定する（例: `list_tasks,insert_task`）。未知の名前はエラー |
+| `GOOGLE_TASKS_ALLOWED_LISTS` | 未設定 | 許可するタスクリスト ID をカンマ区切りで指定する。それ以外のリストは拒否し、リストの新規作成も無効になり、`list_task_lists` もこれらだけを返す |
 | `XDG_CONFIG_HOME` | `~/.config` | 保存先の基点 |
 | `LOG_LEVEL` | `info` | `debug` / `info` / `warn` / `error` |
 

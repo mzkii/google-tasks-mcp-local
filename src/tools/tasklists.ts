@@ -9,6 +9,7 @@ import {
 } from "../google/api.ts";
 import { createLogger } from "../utils/logger.ts";
 import { addReadableTimestamps } from "../utils/timestamp.ts";
+import { allowedLists } from "../utils/allowlist.ts";
 
 const logger = createLogger({ component: "tools:tasklists" });
 
@@ -34,6 +35,10 @@ export function registerTaskListsTools(server: any) {
       logger.info("Tool invoked: list_task_lists");
       try {
         const result = await listTaskLists(maxResults, pageToken);
+        const allowed = allowedLists();
+        if (allowed && Array.isArray(result?.items)) {
+          result.items = result.items.filter((l: any) => allowed.has(l.id));
+        }
         const processedData = addReadableTimestamps(result);
 
         return {

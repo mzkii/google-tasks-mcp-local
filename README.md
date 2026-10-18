@@ -59,6 +59,47 @@ npm run setup -- --profile work --readonly     # list/get tools only
 npm run setup -- ~/path/to/client_secret.json  # use a specific JSON
 ```
 
+## Unattended / automation use
+
+When a scheduled job reads untrusted text such as Slack messages, that text can try to steer the AI. Register only the tools and lists the job needs, so a hijacked run can do little harm. The list ID is the `id` returned by `list_task_lists`.
+
+```sh
+claude mcp add google-tasks-side -s user -e GOOGLE_TASKS_TOOLS=list_tasks,insert_task,patch_task -e GOOGLE_TASKS_ALLOWED_LISTS=<list id> -- node /path/to/build/index.js
+```
+
+The same setup for Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "google-tasks-side": {
+      "command": "node",
+      "args": ["/path/to/build/index.js"],
+      "env": {
+        "GOOGLE_TASKS_TOOLS": "list_tasks,insert_task,patch_task",
+        "GOOGLE_TASKS_ALLOWED_LISTS": "<list id>"
+      }
+    }
+  }
+}
+```
+
+### Slack to Google Tasks sync
+
+The `automation/` directory has a generic macOS job that reads your recent Slack mentions, DMs and thread updates and adds the action items for you to a task list. It needs the Claude Code CLI logged in, the claude.ai Slack connector authorized in Claude Code (run `/mcp` and authorize it), and this server already set up with `npm run setup`.
+
+Copy `automation/config.example.env` to a private place outside this repo, fill in the task list ID and schedule, then install and run it once.
+
+```sh
+bash automation/install.sh /path/to/your/config.env
+launchctl kickstart gui/$(id -u)/local.google-tasks-mcp.slack-sync
+tail -f ~/Library/Logs/google-tasks-mcp-local/slack-sync.log
+```
+
+`install.sh` copies the config to `~/.config/google-tasks-mcp-local/automation/` and registers a launchd job, so the job does not depend on where your config lives. `install.sh --uninstall` removes the job and keeps the copied config.
+
+Slack text is treated as untrusted. The headless run is allowed only the read-only Slack tools you list plus `list_tasks`, `insert_task` and `patch_task` on one task list, and `--permission-mode dontAsk` denies everything else. Each run uses your Claude subscription usage.
+
 ## Troubleshooting
 
 | Symptom | Fix |
@@ -105,6 +146,8 @@ Logs go to stderr only, and tokens are never logged.
 | --- | --- | --- |
 | `GOOGLE_TASKS_PROFILE` | `default` | Profile name (`--profile` takes precedence) |
 | `GOOGLE_TASKS_READONLY` | unset | `1` registers only the 4 read tools |
+| `GOOGLE_TASKS_TOOLS` | unset | Comma-separated tool names to register (e.g. `list_tasks,insert_task`). Unknown names are an error |
+| `GOOGLE_TASKS_ALLOWED_LISTS` | unset | Comma-separated task list IDs. Other lists are refused, list creation is disabled, and `list_task_lists` shows only these |
 | `XDG_CONFIG_HOME` | `~/.config` | Base directory for storage |
 | `LOG_LEVEL` | `info` | `debug` / `info` / `warn` / `error` |
 
